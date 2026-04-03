@@ -14,6 +14,7 @@ class LiveMeetingController extends GetxController {
   RxBool audioEnabled = true.obs;
   RxBool cameraEnabled = true.obs;
   RxString meetingError = RxString("");
+  EventsListener<RoomEvent>? _roomListener;
   RxList<mt.Participant> waitingList = RxList<mt.Participant>();
   Rx<mt.MeetingModel?> meetingModel = Rx<mt.MeetingModel?>(null);
   IO.Socket? socket;
@@ -22,6 +23,7 @@ class LiveMeetingController extends GetxController {
     if (user == null) {
       return;
     }
+    meetingModel.value = model;
     socket = IO.io(
       Net.socketUrl,
       IO.OptionBuilder()
@@ -53,12 +55,20 @@ class LiveMeetingController extends GetxController {
     socket!.connect();
   }
 
-  void closeMeeting() {
+  void closeMeeting() async {
     if (socket != null && socket!.connected) {
       socket!.disconnect();
       socket!.dispose();
       socket = null;
     }
+    if (room.value != null) {
+      await room.value!.localParticipant?.unpublishAllTracks();
+      room.value!.disconnect();
+      room.value!.dispose();
+      room.value = null;
+    }
+    _roomListener?.dispose();
+    _roomListener = null;
   }
 
   void fetchMeetingToken(UserModel model, mt.MeetingModel meeting) async {
@@ -80,6 +90,14 @@ class LiveMeetingController extends GetxController {
     room.value = Room(
       roomOptions: RoomOptions(adaptiveStream: true, dynacast: true),
     );
+    _roomListener = room.value!.createListener();
+    _roomListener!
+      ..on<ParticipantConnectedEvent>((_) => update())
+      ..on<ParticipantDisconnectedEvent>((_) => update())
+      ..on<TrackSubscribedEvent>((_) => update())
+      ..on<TrackUnsubscribedEvent>((_) => update())
+      ..on<TrackMutedEvent>((_) => update()) // Added: for cam toggle
+      ..on<TrackUnmutedEvent>((_) => update());
     try {
       await room.value!.prepareConnection(Net.liveUrl, token.value);
       await room.value!.connect(Net.liveUrl, token.value);
@@ -87,6 +105,7 @@ class LiveMeetingController extends GetxController {
       await room.value!.localParticipant?.setMicrophoneEnabled(
         audioEnabled.value,
       );
+      update();
     } catch (e) {
       log("There was error $e");
       meetingError.value = "LiveKit Connection Error: $e";
@@ -103,6 +122,28 @@ class LiveMeetingController extends GetxController {
     );
     if (response.hasError) {
       Toaster.error(response.response, title: "Error Adding participant");
+    }
+  }
+
+  void switchMic(bool state) async {
+    if (room.value == null) return;
+    try {
+      await room.value!.localParticipant?.setMicrophoneEnabled(state);
+      audioEnabled.value = state;
+      update();
+    } catch (e) {
+      //
+    }
+  }
+
+  void switchVid(bool state) async {
+    if (room.value == null) return;
+    try {
+      await room.value!.localParticipant?.setCameraEnabled(state);
+      cameraEnabled.value = state;
+      update();
+    } catch (e) {
+      //
     }
   }
 }
