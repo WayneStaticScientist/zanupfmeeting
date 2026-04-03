@@ -27,4 +27,33 @@ class Toaster {
       icon: const Icon(Icons.error, color: Colors.white),
     );
   }
+
+  static void withAction(
+    String s, {
+    void Function()? onAction,
+    String? actionTitle,
+    String? topic,
+  }) {
+    Get.snackbar(
+      topic ?? 'Hie',
+      s,
+      snackPosition: SnackPosition.TOP,
+      backgroundColor: Colors.green.withAlpha(200),
+      colorText: Colors.white,
+      margin: const EdgeInsets.all(15),
+      icon: const Icon(Icons.check_circle, color: Colors.white),
+      mainButton: TextButton(
+        onPressed: () {
+          if (onAction != null) onAction();
+          if (Get.isSnackbarOpen) {
+            Get.back();
+          }
+        },
+        child: Text(
+          actionTitle ?? '',
+          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+        ),
+      ),
+    );
+  }
 }

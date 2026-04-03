@@ -1,6 +1,7 @@
 import 'package:get/get.dart';
 import 'package:flutter/material.dart';
 import 'package:zanupfmeeting/features/meeting/controllers/meeting_controller.dart';
+import 'package:zanupfmeeting/shared/widgets/primary_button.dart';
 
 class NewMeetingModal extends StatefulWidget {
   final Function(void Function()) setModalState;
@@ -118,25 +119,17 @@ class _NewMeetingModalState extends State<NewMeetingModal> {
             ],
           ),
           const SizedBox(height: 32),
-
           // Create Button
-          SizedBox(
-            width: double.infinity,
-            height: 60,
-            child: ElevatedButton(
-              onPressed: () => Navigator.pop(context),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: colorScheme.primary,
-                foregroundColor: Colors.white,
-                elevation: 0,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(20),
-                ),
-              ),
-              child: const Text(
-                "Launch Meeting",
-                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-              ),
+          Obx(
+            () => PrimaryButton(
+              onPressed: () {
+                _meetingController.createImmediateMeeting(
+                  roomName: _roomNameController.text.trim(),
+                  isPublic: _isPublic,
+                );
+              },
+              text: "Launch Meeting",
+              isLoading: _meetingController.creatingMeeting.value,
             ),
           ),
         ],

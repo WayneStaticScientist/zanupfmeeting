@@ -1,4 +1,7 @@
+import 'package:exui/exui.dart';
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
+import 'package:zanupfmeeting/features/meeting/screens/conference_room.dart';
 import 'package:zanupfmeeting/shared/models/meeting_model.dart';
 
 class MeetingWidget extends StatelessWidget {
@@ -56,16 +59,15 @@ class MeetingWidget extends StatelessWidget {
           ),
           Column(
             children: [
-              const Icon(Icons.more_vert_rounded, size: 20),
-              const SizedBox(height: 4),
-              Text(
-                "${meeting.participants.length}",
-                style: TextStyle(
-                  fontSize: 11,
-                  color: Theme.of(context).colorScheme.primary,
-                  fontWeight: FontWeight.bold,
+              if (meeting.status == 'Active') ...[
+                ElevatedButton(
+                  onPressed: () {
+                    Get.to(() => ScreenConferenceRoom(meetingModel: meeting));
+                  },
+                  child: "Join Now".text(),
                 ),
-              ),
+                const SizedBox(height: 4),
+              ],
             ],
           ),
         ],

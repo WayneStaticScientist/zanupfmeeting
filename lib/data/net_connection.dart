@@ -5,7 +5,10 @@ import 'package:zanupfmeeting/shared/models/response_model.dart';
 
 class Net {
   static Dio? _dio;
-  static const String baseUrl = "http://192.168.1.199:5119/v1";
+  static const String domain = '192.168.1.199:5119';
+  static const String baseUrl = "http://$domain/v1";
+  static const String socketUrl = "http://$domain";
+  static const String liveUrl = "ws://192.168.1.199:7880";
   // static const String baseUrl = "https://api.mistpos.co.zw/v1";
   static Future<ResponseModel> get(String url) async {
     if (Net._dio == null) {
