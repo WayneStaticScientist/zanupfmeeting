@@ -2,10 +2,12 @@ import 'dart:developer';
 
 import 'package:get/get.dart';
 import 'package:livekit_client/livekit_client.dart';
+import 'package:zanupfmeeting/core/constants/meeting.dart';
 import 'package:zanupfmeeting/core/utils/toaster_util.dart';
 import 'package:zanupfmeeting/data/net_connection.dart';
 // ignore: library_prefixes
 import 'package:socket_io_client/socket_io_client.dart' as IO;
+import 'package:zanupfmeeting/features/home/main_screen.dart';
 import 'package:zanupfmeeting/shared/models/user_model.dart';
 import 'package:zanupfmeeting/shared/models/meeting_model.dart' as mt;
 
@@ -51,6 +53,22 @@ class LiveMeetingController extends GetxController {
         actionTitle: "Add",
         topic: "User",
       );
+    });
+    socket!.on("meeting-command", (e) {
+      final command = e['command'];
+      if (command == MeetingConstants.CMD_REMOVE) {
+        closeMeeting();
+        Get.offAll(() => ScreenDashboard());
+        return;
+      }
+      if (command == MeetingConstants.CMD_MUTE) {
+        switchMic(false);
+        return;
+      }
+      if (command == MeetingConstants.CMD_HIDE_CAMERA) {
+        switchVid(false);
+        return;
+      }
     });
     socket!.connect();
   }
@@ -145,5 +163,19 @@ class LiveMeetingController extends GetxController {
     } catch (e) {
       //
     }
+  }
+
+  void sendMeetingCommand({
+    required String userId,
+    required String command,
+  }) async {
+    await Net.post(
+      '/meetings/command',
+      data: {
+        "meetingCode": meetingModel.value!.meetingCode,
+        "command": command,
+        "targetUserId": userId,
+      },
+    );
   }
 }

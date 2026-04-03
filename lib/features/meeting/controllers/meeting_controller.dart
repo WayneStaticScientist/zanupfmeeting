@@ -1,8 +1,8 @@
 import 'package:get/get.dart';
-import 'package:zanupfmeeting/core/utils/toaster_util.dart';
 import 'package:zanupfmeeting/data/net_connection.dart';
-import 'package:zanupfmeeting/features/meeting/screens/conference_room.dart';
+import 'package:zanupfmeeting/core/utils/toaster_util.dart';
 import 'package:zanupfmeeting/shared/models/meeting_model.dart';
+import 'package:zanupfmeeting/features/meeting/screens/conference_room.dart';
 
 class MeetingController extends GetxController {
   RxString error = "".obs;

@@ -3,7 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:zanupfmeeting/shared/meeting/meeting_participant.dart';
 
 class MeetingSidePanel extends StatefulWidget {
-  const MeetingSidePanel({super.key});
+  final int activeTab;
+  const MeetingSidePanel({super.key, required this.activeTab});
 
   @override
   State<MeetingSidePanel> createState() => _MeetingSidePanelState();
@@ -11,6 +12,12 @@ class MeetingSidePanel extends StatefulWidget {
 
 class _MeetingSidePanelState extends State<MeetingSidePanel> {
   int _activeTab = 0;
+  @override
+  void initState() {
+    _activeTab = widget.activeTab;
+    super.initState();
+  }
+
   @override
   Widget build(BuildContext context) {
     return ClipRRect(

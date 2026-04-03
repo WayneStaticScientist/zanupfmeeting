@@ -4,13 +4,13 @@ import 'package:exui/exui.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/material.dart';
 import 'package:livekit_client/livekit_client.dart' as live;
-import 'package:zanupfmeeting/core/extensions/bool_utils.dart';
-import 'package:zanupfmeeting/features/auth/controllers/user_controller.dart';
-import 'package:zanupfmeeting/shared/meeting/meeting_error.dart';
 import 'package:zanupfmeeting/shared/meeting/side_panel.dart';
+import 'package:zanupfmeeting/core/extensions/bool_utils.dart';
 import 'package:zanupfmeeting/shared/models/meeting_model.dart';
+import 'package:zanupfmeeting/shared/meeting/meeting_error.dart';
 import 'package:zanupfmeeting/shared/widgets/meeting_loader.dart';
 import 'package:zanupfmeeting/shared/meeting/video_participant.dart';
+import 'package:zanupfmeeting/features/auth/controllers/user_controller.dart';
 import 'package:zanupfmeeting/features/meeting/controllers/live_meeting_controller.dart';
 
 class ScreenConferenceRoom extends StatefulWidget {
@@ -107,6 +107,12 @@ class _ScreenConferenceRoomState extends State<ScreenConferenceRoom> {
                     _userController.user.value!.id,
                 participant: participant,
                 key: ValueKey(participant.sid),
+                onCommand: (String userId, String command) {
+                  _liveMeetingController.sendMeetingCommand(
+                    userId: userId,
+                    command: command,
+                  );
+                },
               );
             },
           ).paddingZero.center();
@@ -318,7 +324,7 @@ class _ScreenConferenceRoomState extends State<ScreenConferenceRoom> {
       right: 12,
       bottom: 100,
       width: 300,
-      child: MeetingSidePanel(),
+      child: MeetingSidePanel(activeTab: _activeTab),
     );
   }
 

@@ -4,14 +4,17 @@ import 'package:exui/material.dart';
 import 'package:flutter/material.dart';
 import 'package:livekit_client/livekit_client.dart';
 import 'package:livekit_client/livekit_client.dart' as live;
+import 'package:zanupfmeeting/core/constants/meeting.dart';
 
 class VideoParticipant extends StatelessWidget {
   final live.Participant participant;
   final bool isHost;
+  final Function(String userId, String command) onCommand;
   const VideoParticipant({
     super.key,
     required this.participant,
     required this.isHost,
+    required this.onCommand,
   });
 
   @override
@@ -90,15 +93,28 @@ class VideoParticipant extends StatelessWidget {
                           padding: EdgeInsets.symmetric(vertical: 0),
                           child: const Divider(),
                         ),
-                        PopupMenuItem(
-                          child: "Mute".text().textIconButton(
-                            onPressed: () {},
-                            icon: Icon(Icons.mic_off),
+                        if (!participant.isMuted)
+                          PopupMenuItem(
+                            child: "Mute".text().textIconButton(
+                              onPressed: () {
+                                Navigator.of(context).pop();
+                                onCommand(
+                                  participant.identity,
+                                  MeetingConstants.CMD_MUTE,
+                                );
+                              },
+                              icon: Icon(Icons.mic_off),
+                            ),
                           ),
-                        ),
                         PopupMenuItem(
                           child: "Video Off".text().textIconButton(
-                            onPressed: () {},
+                            onPressed: () {
+                              Navigator.of(context).pop();
+                              onCommand(
+                                participant.identity,
+                                MeetingConstants.CMD_HIDE_CAMERA,
+                              );
+                            },
                             icon: Icon(Icons.camera_roll),
                           ),
                         ),
