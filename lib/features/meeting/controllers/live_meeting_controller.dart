@@ -6,6 +6,7 @@ import 'package:zanupfmeeting/data/net_connection.dart';
 import 'package:zanupfmeeting/core/constants/meeting.dart';
 import 'package:zanupfmeeting/core/utils/toaster_util.dart';
 import 'package:flutter_background/flutter_background.dart';
+import 'package:zanupfmeeting/shared/models/settings_model.dart';
 import 'package:zanupfmeeting/shared/models/user_model.dart';
 // ignore: library_prefixes
 import 'package:socket_io_client/socket_io_client.dart' as IO;
@@ -26,6 +27,7 @@ class LiveMeetingController extends GetxController {
   IO.Socket? socket;
   void initMeeting(mt.MeetingModel model) async {
     final user = UserModel.fromStorage();
+    meetingError.value = '';
     if (user == null) {
       return;
     }
@@ -34,6 +36,7 @@ class LiveMeetingController extends GetxController {
     if (meetingError.isNotEmpty) {
       return;
     }
+
     socket = IO.io(
       Net.socketUrl,
       IO.OptionBuilder()
@@ -43,6 +46,9 @@ class LiveMeetingController extends GetxController {
     );
 
     socket!.onConnect((_) {
+      if (meetingModel.value!.status == "Scheduled") {
+        return;
+      }
       socket!.emit('i-wanna-join', {
         "userId": user.id!,
         "meetingCode": model.meetingCode,
@@ -53,12 +59,23 @@ class LiveMeetingController extends GetxController {
       fetchMeetingToken(user, model);
     });
 
+    socket!.on((model.meetingCode), (e) async {
+      if (e['event'] == 'started') {
+        await updateMeeting(model.meetingCode);
+        socket!.emit('i-wanna-join', {
+          "userId": user.id!,
+          "meetingCode": model.meetingCode,
+        });
+      }
+    });
+
     socket!.on("can-user-join", (data) {
       final participant = mt.Participant.fromJson(data);
       if (waitingList.indexWhere((e) => e.userId == participant.userId) >= 0) {
         return;
       }
       waitingList.add(participant);
+      if (SettingsModel.fromStorage().disableParticipaantsNotifications) return;
       Toaster.withAction(
         "${participant.displayName} wanna join the meeting",
         onAction: () => admitParticipant(participant),
@@ -85,10 +102,11 @@ class LiveMeetingController extends GetxController {
     });
 
     socket!.on("new-chat-message", (e) {
-      final messageModel = MessageModel.fromJson(e);
-      Toaster.info("New message from ${messageModel.message}");
-      messages.add(messageModel);
       messagesSize.value += 1;
+      final messageModel = MessageModel.fromJson(e);
+      messages.add(messageModel);
+      if (SettingsModel.fromStorage().disableMessageNotifications) return;
+      Toaster.info("New message from ${messageModel.message}");
     });
 
     socket!.on("highlight-node", (e) {

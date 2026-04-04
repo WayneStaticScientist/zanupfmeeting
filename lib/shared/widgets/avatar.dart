@@ -14,7 +14,10 @@ class Avatar extends StatelessWidget {
           width: 2,
         ),
       ),
-      child: const CircleAvatar(radius: 24),
+      child: CircleAvatar(
+        radius: 24,
+        backgroundImage: AssetImage("assets/zanu_icon.jpg"),
+      ),
     );
   }
 }

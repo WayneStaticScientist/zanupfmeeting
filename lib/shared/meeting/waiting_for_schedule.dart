@@ -1,13 +1,16 @@
 import 'dart:async';
 import 'dart:math' as math;
+import 'package:exui/exui.dart';
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
+import 'package:zanupfmeeting/core/utils/toaster_util.dart';
+import 'package:zanupfmeeting/data/net_connection.dart';
+import 'package:zanupfmeeting/features/auth/controllers/user_controller.dart';
 import 'package:zanupfmeeting/shared/models/meeting_model.dart';
-
-// Assuming these are your paths
-// import 'package:zanupfmeeting/features/meeting/models/meeting_model.dart';
+import 'package:zanupfmeeting/shared/widgets/primary_button.dart';
 
 class MeetingWaitingRoom extends StatefulWidget {
-  final MeetingModel meeting; // Replace with MeetingModel once imported
+  final MeetingModel meeting;
   final VoidCallback onMeetingStarted;
 
   const MeetingWaitingRoom({
@@ -24,11 +27,11 @@ class _MeetingWaitingRoomState extends State<MeetingWaitingRoom>
     with TickerProviderStateMixin {
   late AnimationController _rotationController;
   late AnimationController _pulseController;
-
+  final _userController = Get.find<UserController>();
   Timer? _countdownTimer;
   Duration _timeLeft = Duration.zero;
   bool _isPastTime = false;
-
+  bool _isRequestingToJoin = false;
   @override
   void initState() {
     super.initState();
@@ -88,7 +91,6 @@ class _MeetingWaitingRoomState extends State<MeetingWaitingRoom>
 
   String _formatDuration(Duration duration) {
     if (_isPastTime) return "Starting soon...";
-
     String twoDigits(int n) => n.toString().padLeft(2, "0");
     String hours = twoDigits(duration.inHours);
     String minutes = twoDigits(duration.inMinutes.remainder(60));
@@ -102,8 +104,11 @@ class _MeetingWaitingRoomState extends State<MeetingWaitingRoom>
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
     final textTheme = Theme.of(context).textTheme;
-    final size = MediaQuery.of(context).size;
-
+    final isInMeeting =
+        widget.meeting.participants.indexWhere(
+          (e) => e.userId == _userController.user.value!.id,
+        ) >=
+        0;
     return Scaffold(
       backgroundColor: Colors.black,
       body: Stack(
@@ -114,7 +119,7 @@ class _MeetingWaitingRoomState extends State<MeetingWaitingRoom>
             child: Container(
               decoration: BoxDecoration(
                 gradient: RadialGradient(
-                  colors: [colorScheme.primary.withOpacity(0.15), Colors.black],
+                  colors: [colorScheme.primary.withAlpha(40), Colors.black],
                   radius: 1.2,
                 ),
               ),
@@ -125,7 +130,7 @@ class _MeetingWaitingRoomState extends State<MeetingWaitingRoom>
           SafeArea(
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 32),
-              child: Column(
+              child: ListView(
                 children: [
                   const SizedBox(height: 40),
                   // Header Info
@@ -135,10 +140,10 @@ class _MeetingWaitingRoomState extends State<MeetingWaitingRoom>
                       vertical: 8,
                     ),
                     decoration: BoxDecoration(
-                      color: colorScheme.primary.withOpacity(0.1),
+                      color: colorScheme.primary.withAlpha(30),
                       borderRadius: BorderRadius.circular(20),
                       border: Border.all(
-                        color: colorScheme.primary.withOpacity(0.2),
+                        color: colorScheme.primary.withAlpha(50),
                       ),
                     ),
                     child: Row(
@@ -161,9 +166,7 @@ class _MeetingWaitingRoomState extends State<MeetingWaitingRoom>
                       ],
                     ),
                   ),
-
-                  const Spacer(),
-
+                  14.gapHeight,
                   // Animated Visualizer
                   SizedBox(
                     height: 240,
@@ -187,7 +190,7 @@ class _MeetingWaitingRoomState extends State<MeetingWaitingRoom>
                         _buildRing(
                           0.6,
                           _rotationController,
-                          colorScheme.primary.withOpacity(0.5),
+                          colorScheme.primary.withAlpha(128),
                           0.5,
                         ),
 
@@ -207,7 +210,7 @@ class _MeetingWaitingRoomState extends State<MeetingWaitingRoom>
                               color: colorScheme.primary,
                               boxShadow: [
                                 BoxShadow(
-                                  color: colorScheme.primary.withOpacity(0.5),
+                                  color: colorScheme.primary.withAlpha(128),
                                   blurRadius: 30,
                                   spreadRadius: 5,
                                 ),
@@ -236,9 +239,16 @@ class _MeetingWaitingRoomState extends State<MeetingWaitingRoom>
                     ),
                   ),
                   const SizedBox(height: 8),
+
+                  PrimaryButton(
+                    text: "Request To Join",
+                    isLoading: _isRequestingToJoin,
+                    onPressed: _requestToJoin,
+                  ).visibleIfNot(isInMeeting),
                   Text(
-                    "Hosted by ${widget.meeting.host}",
+                    "Hosted by ${widget.meeting.participants.firstOrNull?.displayName ?? ''}",
                     style: textTheme.bodyLarge?.copyWith(color: Colors.white54),
+                    textAlign: TextAlign.center,
                   ),
 
                   const SizedBox(height: 48),
@@ -250,7 +260,7 @@ class _MeetingWaitingRoomState extends State<MeetingWaitingRoom>
                       vertical: 20,
                     ),
                     decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.05),
+                      color: Colors.white.withAlpha(20),
                       borderRadius: BorderRadius.circular(24),
                       border: Border.all(color: Colors.white10),
                     ),
@@ -277,15 +287,14 @@ class _MeetingWaitingRoomState extends State<MeetingWaitingRoom>
                         ),
                       ],
                     ),
-                  ),
-
-                  const Spacer(),
+                  ).visibleIf(isInMeeting),
 
                   // Bottom Action / Status
                   Text(
                     "The meeting will begin automatically.",
                     style: textTheme.bodySmall?.copyWith(color: Colors.white24),
-                  ),
+                    textAlign: TextAlign.center,
+                  ).visibleIf(isInMeeting),
                   const SizedBox(height: 24),
                 ],
               ),
@@ -319,6 +328,31 @@ class _MeetingWaitingRoomState extends State<MeetingWaitingRoom>
       },
     );
   }
+
+  void _requestToJoin() async {
+    setState(() {
+      _isRequestingToJoin = true;
+    });
+    final response = await Net.post(
+      "/meetings/room/participant-request",
+      data: {
+        "userId": _userController.user.value!.id,
+        "meetingCode": widget.meeting.meetingCode,
+      },
+    );
+    if (!mounted) return;
+    setState(() {
+      _isRequestingToJoin = false;
+    });
+    if (response.hasError) {
+      return Toaster.error(response.response, title: "Joining Failure");
+    }
+    final md = MeetingModel.fromJson(response.body['meeting']);
+    setState(() {
+      widget.meeting.participants.clear();
+      widget.meeting.participants.addAll(md.participants);
+    });
+  }
 }
 
 class _RingPainter extends CustomPainter {
@@ -332,7 +366,7 @@ class _RingPainter extends CustomPainter {
     final radius = size.width / 2;
 
     final paint = Paint()
-      ..color = color.withOpacity(0.2)
+      ..color = color.withAlpha(50)
       ..style = PaintingStyle.stroke
       ..strokeWidth = strokeWidth;
 

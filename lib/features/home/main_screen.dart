@@ -3,12 +3,16 @@ import 'dart:ui';
 import 'package:exui/exui.dart';
 import 'package:get/get.dart';
 import 'package:flutter/material.dart';
-import 'package:zanupfmeeting/shared/dialogs/schedule_meeting_modal.dart';
 import 'package:zanupfmeeting/shared/widgets/avatar.dart';
 import 'package:zanupfmeeting/shared/widgets/blur_circle.dart';
 import 'package:zanupfmeeting/shared/widgets/meeting_widget.dart';
 import 'package:zanupfmeeting/shared/dialogs/new_meeting_modal.dart';
+import 'package:zanupfmeeting/features/settings/screen_settings.dart';
+import 'package:zanupfmeeting/features/meeting/hook/meeting_hook.dart';
+import 'package:zanupfmeeting/shared/dialogs/join_meeting_modal.dart';
+import 'package:zanupfmeeting/shared/dialogs/schedule_meeting_modal.dart';
 import 'package:zanupfmeeting/features/auth/controllers/user_controller.dart';
+import 'package:zanupfmeeting/features/meeting/screens/conference_loader.dart';
 import 'package:zanupfmeeting/features/meeting/controllers/meeting_controller.dart';
 
 class ScreenDashboard extends StatefulWidget {
@@ -19,7 +23,7 @@ class ScreenDashboard extends StatefulWidget {
 }
 
 class _ScreenDashboardState extends State<ScreenDashboard>
-    with SingleTickerProviderStateMixin {
+    with SingleTickerProviderStateMixin, MeetingLinkHandler {
   final _userController = Get.find<UserController>();
   final _meetingController = Get.find<MeetingController>();
   @override
@@ -28,6 +32,11 @@ class _ScreenDashboardState extends State<ScreenDashboard>
     WidgetsBinding.instance.addPostFrameCallback((e) {
       _meetingController.fetchMeetings();
     });
+  }
+
+  @override
+  void onMeetingCodeReceived(String code) {
+    Get.to(() => MeetingSearchLoader(meetingCode: code));
   }
 
   @override
@@ -95,9 +104,10 @@ class _ScreenDashboardState extends State<ScreenDashboard>
                 // Action Grid
                 SliverToBoxAdapter(
                   child: Padding(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 24.0,
-                      vertical: 0,
+                    padding: const EdgeInsets.only(
+                      left: 24.0,
+                      right: 24.0,
+                      bottom: 24,
                     ),
                     child: Row(
                       children: [
@@ -114,6 +124,7 @@ class _ScreenDashboardState extends State<ScreenDashboard>
                           icon: Icons.videocam_rounded,
                           label: "Join",
                           color: colorScheme.secondary,
+                          onTap: () => _showJoinMeetingModal(context),
                         ),
                         const SizedBox(width: 16),
                         _buildQuickAction(
@@ -227,7 +238,11 @@ class _ScreenDashboardState extends State<ScreenDashboard>
         children: [
           _navItem(Icons.home_filled, "Home", colorScheme.primary),
           _navItem(Icons.folder_open_rounded, "Files", Colors.grey),
-          _navItem(Icons.settings_outlined, "Settings", Colors.grey),
+          _navItem(
+            Icons.settings_outlined,
+            "Settings",
+            Colors.grey,
+          ).onTap(() => Get.to(() => ScreenSettings())),
         ],
       ),
     );
@@ -274,6 +289,20 @@ class _ScreenDashboardState extends State<ScreenDashboard>
         builder: (context, setModalState) => BackdropFilter(
           filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
           child: ScheduleMeetingModal(setModalState: setModalState),
+        ),
+      ),
+    );
+  }
+
+  void _showJoinMeetingModal(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setModalState) => BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+          child: JoinMeetingModal(setModalState: setModalState),
         ),
       ),
     );

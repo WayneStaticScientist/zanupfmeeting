@@ -48,7 +48,7 @@ class MeetingWidget extends StatelessWidget {
                   ),
                 ),
                 Text(
-                  meeting.duration ?? '',
+                  meeting.duration ?? meeting.status,
                   style: TextStyle(
                     color: Theme.of(context).colorScheme.onSurfaceVariant,
                     fontSize: 13,
@@ -59,7 +59,8 @@ class MeetingWidget extends StatelessWidget {
           ),
           Column(
             children: [
-              if (meeting.status == 'Active') ...[
+              if (meeting.status == 'Active' ||
+                  meeting.status == "Scheduled") ...[
                 ElevatedButton(
                   onPressed: () {
                     Get.to(() => ScreenConferenceRoom(meetingModel: meeting));

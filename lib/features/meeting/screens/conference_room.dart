@@ -3,6 +3,7 @@ import 'package:get/get.dart';
 import 'package:exui/exui.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/material.dart';
+import 'package:share_plus/share_plus.dart';
 import 'package:livekit_client/livekit_client.dart' as live;
 import 'package:zanupfmeeting/shared/meeting/side_panel.dart';
 import 'package:zanupfmeeting/core/extensions/bool_utils.dart';
@@ -10,6 +11,7 @@ import 'package:zanupfmeeting/shared/models/meeting_model.dart';
 import 'package:zanupfmeeting/shared/meeting/meeting_error.dart';
 import 'package:zanupfmeeting/shared/widgets/meeting_loader.dart';
 import 'package:zanupfmeeting/shared/meeting/video_participant.dart';
+import 'package:zanupfmeeting/shared/meeting/waiting_for_schedule.dart';
 import 'package:zanupfmeeting/features/auth/controllers/user_controller.dart';
 import 'package:zanupfmeeting/features/meeting/controllers/live_meeting_controller.dart';
 
@@ -58,6 +60,16 @@ class _ScreenConferenceRoomState extends State<ScreenConferenceRoom> {
                 _liveMeetingController.initMeeting(widget.meetingModel);
               },
               errorMessage: _liveMeetingController.meetingError.value,
+            );
+          }
+          if (_liveMeetingController.meetingModel.value == null) {
+            return ''.text();
+          }
+          if (_liveMeetingController.meetingModel.value!.status ==
+              "Scheduled") {
+            return MeetingWaitingRoom(
+              meeting: _liveMeetingController.meetingModel.value!,
+              onMeetingStarted: () {},
             );
           }
           if (_liveMeetingController.token.isEmpty) {
@@ -320,6 +332,11 @@ class _ScreenConferenceRoomState extends State<ScreenConferenceRoom> {
                         _activeTab = 1;
                       }),
                     ),
+                    _controlButton(
+                      icon: Icons.share,
+                      color: Colors.white24,
+                      onTap: _shareMeeting,
+                    ),
                     const SizedBox(width: 12),
                     _controlButton(
                       icon: Icons.call_end_rounded,
@@ -445,6 +462,27 @@ class _ScreenConferenceRoomState extends State<ScreenConferenceRoom> {
       onConfirm: () {
         Get.back();
         _liveMeetingController.exitMeeting();
+      },
+    );
+  }
+
+  void _shareMeeting() {
+    Get.defaultDialog(
+      title: "Share?",
+      textCancel: "Share Code",
+      textConfirm: "Share Link",
+      onCancel: () {
+        SharePlus.instance.share(
+          ShareParams(text: widget.meetingModel.meetingCode),
+        );
+      },
+      onConfirm: () {
+        SharePlus.instance.share(
+          ShareParams(
+            text:
+                "https://zanupfmeeting.comradeconnect.co.zw/meeting/${widget.meetingModel.meetingCode}",
+          ),
+        );
       },
     );
   }
