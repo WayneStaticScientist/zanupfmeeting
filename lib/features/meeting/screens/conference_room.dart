@@ -273,8 +273,12 @@ class _ScreenConferenceRoomState extends State<ScreenConferenceRoom> {
                     ),
                     _controlButton(
                       icon: Icons.screen_share_rounded,
-                      color: Colors.white24,
-                      onTap: () {},
+                      color: _liveMeetingController.screenShareEnabled.value
+                          ? Colors.redAccent
+                          : Colors.white24,
+                      onTap: () => _liveMeetingController.screenShare(
+                        !_liveMeetingController.screenShareEnabled.value,
+                      ),
                     ),
                     _controlButton(
                       icon: Icons.chat_bubble_outline_rounded,

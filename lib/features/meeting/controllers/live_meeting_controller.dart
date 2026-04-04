@@ -5,18 +5,19 @@ import 'package:livekit_client/livekit_client.dart';
 import 'package:zanupfmeeting/core/constants/meeting.dart';
 import 'package:zanupfmeeting/core/utils/toaster_util.dart';
 import 'package:zanupfmeeting/data/net_connection.dart';
+import 'package:zanupfmeeting/shared/models/user_model.dart';
 // ignore: library_prefixes
 import 'package:socket_io_client/socket_io_client.dart' as IO;
 import 'package:zanupfmeeting/features/home/main_screen.dart';
 import 'package:zanupfmeeting/shared/models/meeting_model.dart';
 import 'package:zanupfmeeting/shared/models/message_model.dart';
-import 'package:zanupfmeeting/shared/models/user_model.dart';
 import 'package:zanupfmeeting/shared/models/meeting_model.dart' as mt;
 
 class LiveMeetingController extends GetxController {
   RxString token = RxString('');
   RxBool audioEnabled = true.obs;
   RxBool cameraEnabled = true.obs;
+  RxBool screenShareEnabled = false.obs;
   RxString meetingError = RxString("");
   EventsListener<RoomEvent>? _roomListener;
   RxList<mt.Participant> waitingList = RxList<mt.Participant>();
@@ -188,6 +189,17 @@ class LiveMeetingController extends GetxController {
     }
   }
 
+  void screenShare(bool state) async {
+    if (room.value == null) return;
+    try {
+      await room.value!.localParticipant?.setScreenShareEnabled(state);
+      screenShareEnabled.value = state;
+      update();
+    } catch (e) {
+      //
+    }
+  }
+
   void sendMeetingCommand({
     required String userId,
     required String command,
@@ -233,7 +245,7 @@ class LiveMeetingController extends GetxController {
   }
 
   Future<void> updateMeeting(String id) async {
-    final response = await Net.get("/room/$id");
+    final response = await Net.get("/meetings/room/$id");
     if (response.hasError) {
       meetingError.value = response.response;
       return;
