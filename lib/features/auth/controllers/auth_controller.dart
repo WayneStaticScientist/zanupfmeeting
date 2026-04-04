@@ -71,6 +71,7 @@ class AuthController extends GetxController {
       Get.offAll(() => LoginScreen());
       return;
     }
+    if (response.hasError) return;
     Get.find<UserController>().updateUserData(response.body);
   }
 }

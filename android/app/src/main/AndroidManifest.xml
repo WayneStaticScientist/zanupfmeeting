@@ -46,10 +46,12 @@
             android:name="flutterEmbedding"
             android:value="2" />
 
-        <service
-            android:name="aca.bicosatstudios.zanupfmeeting.ForegroundService"
-            android:foregroundServiceType="mediaProjection"
-            android:exported="false" />
+    <service
+        android:name="de.julianassmann.flutter_background.IsolateHolderService"
+        android:enabled="true"
+        android:exported="false"
+        android:foregroundServiceType="mediaProjection" />
+
     </application>
     <!-- Required to query activities that can process text, see:
          https://developer.android.com/training/package-visibility and

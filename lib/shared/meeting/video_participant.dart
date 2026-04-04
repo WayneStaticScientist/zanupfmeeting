@@ -1,10 +1,11 @@
 import 'dart:ui';
+import 'package:get/get.dart';
 import 'package:exui/exui.dart';
 import 'package:exui/material.dart';
 import 'package:flutter/material.dart';
-import 'package:get/get.dart';
 import 'package:livekit_client/livekit_client.dart';
 import 'package:livekit_client/livekit_client.dart' as live;
+import 'package:rive_animated_icon/rive_animated_icon.dart';
 import 'package:zanupfmeeting/core/constants/meeting.dart';
 import 'package:zanupfmeeting/core/extensions/bool_utils.dart';
 import 'package:zanupfmeeting/features/meeting/controllers/live_meeting_controller.dart';
@@ -58,15 +59,25 @@ class VideoParticipant extends StatelessWidget {
                         borderRadius: BorderRadius.circular(8),
                       ),
                       child: [
-                        Icon(
-                          !participant.isMuted
-                              ? Icons.mic_outlined
-                              : Icons.mic_off_rounded,
-                          color: participant.hasAudio
-                              ? Colors.redAccent
-                              : Colors.grey,
-                          size: 18,
-                        ),
+                        if (!participant.isSpeaking)
+                          Icon(
+                            !participant.isMuted
+                                ? Icons.mic_outlined
+                                : Icons.mic_off_rounded,
+                            color: participant.hasAudio
+                                ? Colors.redAccent
+                                : Colors.grey,
+                            size: 18,
+                          )
+                        else
+                          const RiveAnimatedIcon(
+                            loopAnimation: true,
+                            riveIcon: RiveIcon.sound,
+                            width: 25,
+                            height: 25,
+                            color: Colors.red,
+                            strokeWidth: 3,
+                          ),
                         8.gapWidth,
                         Text(
                           participant.name,
@@ -91,16 +102,22 @@ class VideoParticipant extends StatelessWidget {
                     itemBuilder: (context) {
                       return [
                         PopupMenuItem(
-                          child: (hasFocus ? 'Remove SpotLight' : 'SpotLight')
+                          child: participant
+                              .isScreenShareEnabled()
+                              .lord(
+                                "Exit ScreenShare",
+                                (hasFocus ? 'Remove SpotLight' : 'SpotLight'),
+                              )
                               .text()
                               .textIconButton(
-                                onPressed: () =>
-                                    Get.find<LiveMeetingController>()
-                                        .setSpotlight(
-                                          !hasFocus
-                                              ? participant.identity
-                                              : null,
-                                        ),
+                                onPressed: () => {
+                                  Navigator.of(context).pop(),
+
+                                  Get.find<LiveMeetingController>()
+                                      .setSpotlight(
+                                        !hasFocus ? participant.identity : null,
+                                      ),
+                                },
                                 icon: Icon(
                                   hasFocus.lord(
                                     Icons.fullscreen_exit,
@@ -151,15 +168,42 @@ class VideoParticipant extends StatelessWidget {
   }
 
   Widget _buildVideoView() {
-    final trackPub = participant.videoTrackPublications.firstOrNull;
-    final isVideoMuted = trackPub?.muted ?? true;
-    final track = trackPub?.track;
+    final screenTrackPub = participant.videoTrackPublications.where((track) {
+      return track.source == TrackSource.screenShareVideo;
+    }).firstOrNull;
+
+    final cameraTrackPub = participant.videoTrackPublications.where((track) {
+      return track.source == TrackSource.camera;
+    }).firstOrNull;
+
+    final activePub = (screenTrackPub != null && !screenTrackPub.muted)
+        ? screenTrackPub
+        : cameraTrackPub;
+
+    final isVideoMuted = activePub?.muted ?? true;
+    final track = activePub?.track;
 
     if (track != null && track is VideoTrack && !isVideoMuted) {
-      return VideoTrackRenderer(track);
+      return VideoTrackRenderer(
+        track,
+        fit: activePub?.source == TrackSource.screenShareVideo
+            ? VideoViewFit.contain
+            : VideoViewFit.cover,
+      );
     }
-    return const Center(
-      child: Icon(Icons.person, color: Colors.white, size: 48),
+
+    return Center(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const Icon(Icons.person, color: Colors.white, size: 48),
+          if (participant.isMuted)
+            Text(
+              "Video Paused",
+              style: TextStyle(color: Colors.white54, fontSize: 10),
+            ),
+        ],
+      ),
     );
   }
 }

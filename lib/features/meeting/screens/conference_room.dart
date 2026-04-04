@@ -212,7 +212,7 @@ class _ScreenConferenceRoomState extends State<ScreenConferenceRoom> {
                         ),
                       ],
                     ),
-                  ),
+                  ).onTap(_openWaitingListPanel),
                   0.sizedHeight,
                 ),
               ),
@@ -280,16 +280,36 @@ class _ScreenConferenceRoomState extends State<ScreenConferenceRoom> {
                         !_liveMeetingController.screenShareEnabled.value,
                       ),
                     ),
-                    _controlButton(
-                      icon: Icons.chat_bubble_outline_rounded,
-                      color: _showSidebar && _activeTab == 0
-                          ? colorScheme.primary
-                          : Colors.white24,
-                      onTap: () => setState(() {
-                        _showSidebar = !_showSidebar || _activeTab != 0;
-                        _activeTab = 0;
-                      }),
-                    ),
+                    Obx(() {
+                      if (_liveMeetingController.messagesSize.value > 0) {
+                        return Badge.count(
+                          count: _liveMeetingController.messagesSize.value,
+                          child: _controlButton(
+                            icon: Icons.chat_bubble_outline_rounded,
+                            color: _showSidebar && _activeTab == 0
+                                ? colorScheme.primary
+                                : Colors.white24,
+                            onTap: () {
+                              _liveMeetingController.messagesSize.value = 0;
+                              setState(() {
+                                _showSidebar = !_showSidebar || _activeTab != 0;
+                                _activeTab = 0;
+                              });
+                            },
+                          ),
+                        );
+                      }
+                      return _controlButton(
+                        icon: Icons.chat_bubble_outline_rounded,
+                        color: _showSidebar && _activeTab == 0
+                            ? colorScheme.primary
+                            : Colors.white24,
+                        onTap: () => setState(() {
+                          _showSidebar = !_showSidebar || _activeTab != 0;
+                          _activeTab = 0;
+                        }),
+                      );
+                    }),
                     _controlButton(
                       icon: Icons.people_outline_rounded,
                       color: _showSidebar && _activeTab == 1
@@ -305,7 +325,7 @@ class _ScreenConferenceRoomState extends State<ScreenConferenceRoom> {
                       icon: Icons.call_end_rounded,
                       color: Colors.red,
                       isLarge: true,
-                      onTap: () => Navigator.pop(context),
+                      onTap: _initiateCloseMeetingTab,
                     ),
                   ],
                 ),
@@ -366,5 +386,66 @@ class _ScreenConferenceRoomState extends State<ScreenConferenceRoom> {
       return 4;
     }
     return 5;
+  }
+
+  void _openWaitingListPanel() {
+    Get.bottomSheet(
+      Container(
+        padding: EdgeInsets.symmetric(vertical: 20, horizontal: 14),
+        color: Colors.black,
+        child: Obx(() {
+          if (_liveMeetingController.waitingList.isEmpty) {
+            return [
+              Icon(Icons.emoji_people, color: Colors.grey, size: 24),
+              12.gapHeight,
+              "No Waiting Participants".text(
+                style: TextStyle(color: Colors.grey),
+              ),
+            ].column(mainAxisAlignment: MainAxisAlignment.center).center();
+          }
+          return ListView.builder(
+            itemBuilder: (context, index) {
+              final participant = _liveMeetingController.waitingList[index];
+              return ListTile(
+                title: participant.displayName.text(
+                  style: TextStyle(color: Colors.white),
+                ),
+                leading: Icon(Icons.person, color: Colors.white),
+                trailing: [
+                  IconButton.filled(
+                    onPressed: () =>
+                        _liveMeetingController.admitParticipant(participant),
+                    icon: Icon(Icons.done, color: Colors.white),
+                  ),
+                  8.gapHeight,
+                  IconButton.filled(
+                    onPressed: () =>
+                        _liveMeetingController.removeParticipant(participant),
+                    color: Colors.red,
+                    icon: Icon(Icons.close, color: Colors.white),
+                  ),
+                ].row(mainAxisSize: MainAxisSize.min),
+              );
+            },
+            itemCount: _liveMeetingController.waitingList.length,
+          );
+        }),
+      ),
+    );
+  }
+
+  void _initiateCloseMeetingTab() {
+    Get.defaultDialog(
+      title: "Exit Meeting",
+      content:
+          "Are you sure to exit meeting ${_liveMeetingController.meetingModel.value?.host == _userController.user.value!.id ? ".This will mark this meeting as ended if you leave" : ''}"
+              .text(),
+      textCancel: "Dont Leave",
+      textConfirm: "Leave",
+      onConfirm: () {
+        Get.back();
+        _liveMeetingController.exitMeeting();
+      },
+    );
   }
 }

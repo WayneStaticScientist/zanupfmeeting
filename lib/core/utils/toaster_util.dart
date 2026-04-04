@@ -61,9 +61,10 @@ class Toaster {
     Get.snackbar(
       title ?? '',
       message,
+      colorText: Colors.white,
       snackPosition: SnackPosition.TOP,
       margin: const EdgeInsets.all(15),
-      icon: const Icon(Icons.error, color: Colors.white),
+      icon: const Icon(Icons.message, color: Colors.white),
     );
   }
 }

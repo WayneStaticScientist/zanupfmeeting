@@ -1,10 +1,10 @@
 import 'dart:ui';
 import 'package:get/get.dart';
 import 'package:flutter/material.dart';
-import 'package:zanupfmeeting/core/extensions/bool_utils.dart';
 import 'package:zanupfmeeting/core/utils/toaster_util.dart';
-import 'package:zanupfmeeting/features/auth/controllers/user_controller.dart';
+import 'package:zanupfmeeting/core/extensions/bool_utils.dart';
 import 'package:zanupfmeeting/shared/meeting/meeting_participant.dart';
+import 'package:zanupfmeeting/features/auth/controllers/user_controller.dart';
 import 'package:zanupfmeeting/features/meeting/controllers/live_meeting_controller.dart';
 
 class MeetingSidePanel extends StatefulWidget {
@@ -51,11 +51,10 @@ class _MeetingSidePanelState extends State<MeetingSidePanel> {
                 padding: const EdgeInsets.all(16),
                 child: Row(
                   children: [
-                    _tabItem(
-                      "Chat",
-                      _activeTab == 0,
-                      () => setState(() => _activeTab = 0),
-                    ),
+                    _tabItem("Chat", _activeTab == 0, () {
+                      _liveMeetingController.messagesSize.value = 0;
+                      setState(() => _activeTab = 0);
+                    }),
                     const SizedBox(width: 12),
                     _tabItem(
                       "People",
@@ -110,7 +109,7 @@ class _MeetingSidePanelState extends State<MeetingSidePanel> {
                   (_userController.user.value?.id == message.userId).lors(
                     "(you)",
                     (_liveMeetingController.meetingModel.value?.host ==
-                            _userController.user.value!.id)
+                            message.userId)
                         .lors(
                           "${message.displayName}(host)",
                           message.displayName,
@@ -119,7 +118,7 @@ class _MeetingSidePanelState extends State<MeetingSidePanel> {
                   style: TextStyle(
                     color:
                         (_liveMeetingController.meetingModel.value?.host ==
-                                _userController.user.value!.id)
+                                message.userId)
                             .lord(Colors.green, Colors.white60),
                     fontSize: 10,
                     fontWeight: FontWeight.bold,

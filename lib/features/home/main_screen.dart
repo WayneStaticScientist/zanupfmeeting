@@ -3,12 +3,13 @@ import 'dart:ui';
 import 'package:exui/exui.dart';
 import 'package:get/get.dart';
 import 'package:flutter/material.dart';
-import 'package:zanupfmeeting/shared/dialogs/new_meeting_modal.dart';
+import 'package:zanupfmeeting/shared/dialogs/schedule_meeting_modal.dart';
 import 'package:zanupfmeeting/shared/widgets/avatar.dart';
 import 'package:zanupfmeeting/shared/widgets/blur_circle.dart';
+import 'package:zanupfmeeting/shared/widgets/meeting_widget.dart';
+import 'package:zanupfmeeting/shared/dialogs/new_meeting_modal.dart';
 import 'package:zanupfmeeting/features/auth/controllers/user_controller.dart';
 import 'package:zanupfmeeting/features/meeting/controllers/meeting_controller.dart';
-import 'package:zanupfmeeting/shared/widgets/meeting_widget.dart';
 
 class ScreenDashboard extends StatefulWidget {
   const ScreenDashboard({super.key});
@@ -24,7 +25,9 @@ class _ScreenDashboardState extends State<ScreenDashboard>
   @override
   void initState() {
     super.initState();
-    _meetingController.fetchMeetings();
+    WidgetsBinding.instance.addPostFrameCallback((e) {
+      _meetingController.fetchMeetings();
+    });
   }
 
   @override
@@ -118,6 +121,7 @@ class _ScreenDashboardState extends State<ScreenDashboard>
                           icon: Icons.calendar_today_rounded,
                           label: "Schedule",
                           color: Colors.orange,
+                          onTap: () => _showScheduleModal(context),
                         ),
                       ],
                     ),
@@ -256,6 +260,20 @@ class _ScreenDashboardState extends State<ScreenDashboard>
         builder: (context, setModalState) => BackdropFilter(
           filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
           child: NewMeetingModal(setModalState: setModalState),
+        ),
+      ),
+    );
+  }
+
+  void _showScheduleModal(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setModalState) => BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+          child: ScheduleMeetingModal(setModalState: setModalState),
         ),
       ),
     );

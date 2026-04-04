@@ -50,4 +50,33 @@ class MeetingController extends GetxController {
     );
     Toaster.success("Meeting Created", title: "Create Meeting");
   }
+
+  Future<void> scheduleMeeting({
+    required String roomName,
+    required bool isPublic,
+    required String date,
+    required String duration,
+  }) async {
+    creatingMeeting.value = true;
+    final response = await Net.post(
+      "/meetings/schedule/room",
+      data: {
+        "room": roomName,
+        "isPublic": isPublic,
+        "date": date,
+        "duration": duration,
+      },
+    );
+    creatingMeeting.value = false;
+    if (response.hasError) {
+      return Toaster.error(response.response, title: "Create Meeting Error");
+    }
+    fetchMeetings();
+    Get.off(
+      () => ScreenConferenceRoom(
+        meetingModel: MeetingModel.fromJson(response.body['meeting']),
+      ),
+    );
+    Toaster.success("Meeting Created", title: "Create Meeting");
+  }
 }

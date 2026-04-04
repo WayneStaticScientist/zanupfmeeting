@@ -1,10 +1,11 @@
 import 'dart:developer';
-
 import 'package:get/get.dart';
+import 'package:flutter_webrtc/flutter_webrtc.dart';
 import 'package:livekit_client/livekit_client.dart';
+import 'package:zanupfmeeting/data/net_connection.dart';
 import 'package:zanupfmeeting/core/constants/meeting.dart';
 import 'package:zanupfmeeting/core/utils/toaster_util.dart';
-import 'package:zanupfmeeting/data/net_connection.dart';
+import 'package:flutter_background/flutter_background.dart';
 import 'package:zanupfmeeting/shared/models/user_model.dart';
 // ignore: library_prefixes
 import 'package:socket_io_client/socket_io_client.dart' as IO;
@@ -57,6 +58,7 @@ class LiveMeetingController extends GetxController {
       if (waitingList.indexWhere((e) => e.userId == participant.userId) >= 0) {
         return;
       }
+      waitingList.add(participant);
       Toaster.withAction(
         "${participant.displayName} wanna join the meeting",
         onAction: () => admitParticipant(participant),
@@ -86,6 +88,7 @@ class LiveMeetingController extends GetxController {
       final messageModel = MessageModel.fromJson(e);
       Toaster.info("New message from ${messageModel.message}");
       messages.add(messageModel);
+      messagesSize.value += 1;
     });
 
     socket!.on("highlight-node", (e) {
@@ -111,6 +114,9 @@ class LiveMeetingController extends GetxController {
     _roomListener = null;
     messages.clear();
     meetingError.value = '';
+    if (screenShareEnabled.value) {
+      screenShare(false);
+    }
   }
 
   void fetchMeetingToken(UserModel model, mt.MeetingModel meeting) async {
@@ -163,8 +169,16 @@ class LiveMeetingController extends GetxController {
       },
     );
     if (response.hasError) {
-      Toaster.error(response.response, title: "Error Adding participant");
+      return Toaster.error(
+        response.response,
+        title: "Error Adding participant",
+      );
     }
+    waitingList.remove(participant);
+  }
+
+  void removeParticipant(mt.Participant participant) {
+    waitingList.remove(participant);
   }
 
   void switchMic(bool state) async {
@@ -191,11 +205,68 @@ class LiveMeetingController extends GetxController {
 
   void screenShare(bool state) async {
     if (room.value == null) return;
+    if (state) {
+      if (WebRTC.platformIsAndroid) {
+        try {
+          bool granted = await Helper.requestCapturePermission();
+          if (!granted) return;
+          requestBackgroundPermission([bool isRetry = false]) async {
+            try {
+              bool hasPermissions = await FlutterBackground.hasPermissions;
+              if (!isRetry) {
+                const androidConfig = FlutterBackgroundAndroidConfig(
+                  notificationTitle: 'Screen Sharing',
+                  notificationText: 'ZanuPF Meet is sharing the screen.',
+                  notificationImportance: AndroidNotificationImportance.normal,
+                  notificationIcon: AndroidResource(
+                    name: 'livekit_ic_launcher',
+                    defType: 'mipmap',
+                  ),
+                );
+                hasPermissions = await FlutterBackground.initialize(
+                  androidConfig: androidConfig,
+                );
+              }
+              if (hasPermissions &&
+                  !FlutterBackground.isBackgroundExecutionEnabled) {
+                await FlutterBackground.enableBackgroundExecution();
+              }
+              await Future.delayed(const Duration(milliseconds: 500));
+            } catch (e) {
+              if (!isRetry) {
+                return await Future<void>.delayed(
+                  const Duration(seconds: 1),
+                  () => requestBackgroundPermission(true),
+                );
+              }
+              log('could not publish video: $e');
+            }
+          }
+
+          await requestBackgroundPermission();
+        } catch (e) {
+          log("Permission error: $e");
+          Toaster.error("$e");
+          return;
+        }
+      }
+    }
     try {
       await room.value!.localParticipant?.setScreenShareEnabled(state);
       screenShareEnabled.value = state;
+      if (!state) {
+        if (lkPlatformIs(PlatformType.android)) {
+          try {
+            await FlutterBackground.disableBackgroundExecution();
+          } catch (error) {
+            log('error disabling screen share: $error');
+          }
+        }
+      }
       update();
     } catch (e) {
+      Toaster.error("$e", title: 'Screen sharing error');
+      log("Error : $e");
       //
     }
   }
@@ -215,6 +286,7 @@ class LiveMeetingController extends GetxController {
   }
 
   RxList<MessageModel> messages = RxList<MessageModel>();
+  RxInt messagesSize = RxInt(0);
   void sendMessage(String message) {
     final user = UserModel.fromStorage();
     if (user == null) return;
@@ -251,5 +323,16 @@ class LiveMeetingController extends GetxController {
       return;
     }
     meetingModel.value = MeetingModel.fromJson(response.body['meeting']);
+  }
+
+  Future<void> exitMeeting() async {
+    final response = await Net.delete(
+      "/meetings/${meetingModel.value!.meetingCode}",
+    );
+    if (response.hasError) {
+      return Toaster.error(response.response);
+    }
+    Get.offAll(() => ScreenDashboard());
+    Toaster.success("Meeting ended");
   }
 }
