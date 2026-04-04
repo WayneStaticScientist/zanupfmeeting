@@ -33,6 +33,48 @@ Map<String, dynamic> _$MeetingModelToJson(MeetingModel instance) =>
       'participants': instance.participants,
     };
 
+const _$MeetingModelJsonSchema = {
+  r'$schema': 'https://json-schema.org/draft/2020-12/schema',
+  'type': 'object',
+  'properties': {
+    'public': {'type': 'boolean'},
+    'host': {'type': 'string'},
+    'roomName': {'type': 'string'},
+    'meetingCode': {'type': 'string'},
+    'status': {'type': 'string'},
+    'duration': {'type': 'string'},
+    'scheduleTime': {'type': 'string'},
+    'focuseNode': {'type': 'string'},
+    'participants': {
+      'type': 'array',
+      'items': {r'$ref': r'#/$defs/Participant'},
+    },
+  },
+  'required': [
+    'public',
+    'host',
+    'roomName',
+    'meetingCode',
+    'status',
+    'duration',
+    'scheduleTime',
+    'focuseNode',
+    'participants',
+  ],
+  r'$defs': {
+    'Participant': {
+      'type': 'object',
+      'properties': {
+        'userId': {'type': 'string'},
+        'role': {'type': 'string'},
+        'displayName': {'type': 'string'},
+        'status': {'type': 'string'},
+      },
+      'required': ['userId', 'role', 'displayName', 'status'],
+    },
+  },
+};
+
 Participant _$ParticipantFromJson(Map<String, dynamic> json) => Participant(
   userId: json['userId'] as String,
   role: json['role'] as String,

@@ -8,6 +8,8 @@ import 'package:zanupfmeeting/data/net_connection.dart';
 // ignore: library_prefixes
 import 'package:socket_io_client/socket_io_client.dart' as IO;
 import 'package:zanupfmeeting/features/home/main_screen.dart';
+import 'package:zanupfmeeting/shared/models/meeting_model.dart';
+import 'package:zanupfmeeting/shared/models/message_model.dart';
 import 'package:zanupfmeeting/shared/models/user_model.dart';
 import 'package:zanupfmeeting/shared/models/meeting_model.dart' as mt;
 
@@ -20,12 +22,16 @@ class LiveMeetingController extends GetxController {
   RxList<mt.Participant> waitingList = RxList<mt.Participant>();
   Rx<mt.MeetingModel?> meetingModel = Rx<mt.MeetingModel?>(null);
   IO.Socket? socket;
-  void initMeeting(mt.MeetingModel model) {
+  void initMeeting(mt.MeetingModel model) async {
     final user = UserModel.fromStorage();
     if (user == null) {
       return;
     }
     meetingModel.value = model;
+    await updateMeeting(model.meetingCode);
+    if (meetingError.isNotEmpty) {
+      return;
+    }
     socket = IO.io(
       Net.socketUrl,
       IO.OptionBuilder()
@@ -33,15 +39,18 @@ class LiveMeetingController extends GetxController {
           .enableAutoConnect()
           .build(),
     );
+
     socket!.onConnect((_) {
       socket!.emit('i-wanna-join', {
         "userId": user.id!,
         "meetingCode": model.meetingCode,
       });
     });
+
     socket!.on("join-meeting", (_) {
       fetchMeetingToken(user, model);
     });
+
     socket!.on("can-user-join", (data) {
       final participant = mt.Participant.fromJson(data);
       if (waitingList.indexWhere((e) => e.userId == participant.userId) >= 0) {
@@ -54,6 +63,7 @@ class LiveMeetingController extends GetxController {
         topic: "User",
       );
     });
+
     socket!.on("meeting-command", (e) {
       final command = e['command'];
       if (command == MeetingConstants.CMD_REMOVE) {
@@ -69,6 +79,17 @@ class LiveMeetingController extends GetxController {
         switchVid(false);
         return;
       }
+    });
+
+    socket!.on("new-chat-message", (e) {
+      final messageModel = MessageModel.fromJson(e);
+      Toaster.info("New message from ${messageModel.message}");
+      messages.add(messageModel);
+    });
+
+    socket!.on("highlight-node", (e) {
+      meetingModel.value?.focuseNode = e['focusNode'];
+      update();
     });
     socket!.connect();
   }
@@ -87,6 +108,8 @@ class LiveMeetingController extends GetxController {
     }
     _roomListener?.dispose();
     _roomListener = null;
+    messages.clear();
+    meetingError.value = '';
   }
 
   void fetchMeetingToken(UserModel model, mt.MeetingModel meeting) async {
@@ -177,5 +200,44 @@ class LiveMeetingController extends GetxController {
         "targetUserId": userId,
       },
     );
+  }
+
+  RxList<MessageModel> messages = RxList<MessageModel>();
+  void sendMessage(String message) {
+    final user = UserModel.fromStorage();
+    if (user == null) return;
+    if (socket == null || socket!.disconnected) {
+      return;
+    }
+    final messageModel = MessageModel(
+      userId: user.id!,
+      meetingCode: meetingModel.value!.meetingCode,
+      message: message,
+      displayName: "${user.firstName} ${user.lastName}",
+    );
+    socket!.emit("on-event-message", messageModel.toJosn());
+    messages.add(messageModel);
+  }
+
+  void setSpotlight(String? spotLight) async {
+    final response = await Net.put(
+      "/meetings/focus-node",
+      data: {
+        "meetingCode": meetingModel.value!.meetingCode,
+        "focusNode": spotLight,
+      },
+    );
+    if (response.hasError) {
+      return Toaster.error(response.response, title: "SpotLight error");
+    }
+  }
+
+  Future<void> updateMeeting(String id) async {
+    final response = await Net.get("/room/$id");
+    if (response.hasError) {
+      meetingError.value = response.response;
+      return;
+    }
+    meetingModel.value = MeetingModel.fromJson(response.body['meeting']);
   }
 }

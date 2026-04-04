@@ -56,4 +56,14 @@ class Toaster {
       ),
     );
   }
+
+  static void info(String message, {String? title}) {
+    Get.snackbar(
+      title ?? '',
+      message,
+      snackPosition: SnackPosition.TOP,
+      margin: const EdgeInsets.all(15),
+      icon: const Icon(Icons.error, color: Colors.white),
+    );
+  }
 }

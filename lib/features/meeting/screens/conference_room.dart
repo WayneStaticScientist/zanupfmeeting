@@ -90,6 +90,19 @@ class _ScreenConferenceRoomState extends State<ScreenConferenceRoom> {
             ...r.remoteParticipants.values,
             if (r.localParticipant != null) r.localParticipant!,
           ];
+          String? focusNode =
+              _liveMeetingController.meetingModel.value?.focuseNode;
+          bool hasFocus = false;
+          if (focusNode != null && focusNode.isNotEmpty) {
+            final spotLight = meetings.firstWhereOrNull(
+              (part) => (part as live.Participant).identity == focusNode,
+            );
+            if (spotLight != null) {
+              meetings.clear();
+              meetings.add(spotLight);
+              hasFocus = true;
+            }
+          }
           return GridView.builder(
             shrinkWrap: true,
             itemCount: meetings.length,
@@ -102,6 +115,8 @@ class _ScreenConferenceRoomState extends State<ScreenConferenceRoom> {
             itemBuilder: (context, index) {
               final participant = meetings[index] as live.Participant;
               return VideoParticipant(
+                focusNode: focusNode,
+                hasFocus: hasFocus,
                 isHost:
                     _liveMeetingController.meetingModel.value?.host ==
                     _userController.user.value!.id,

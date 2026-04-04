@@ -3,6 +3,7 @@ import 'package:exui/exui.dart';
 import 'package:flutter/material.dart';
 import 'package:livekit_client/livekit_client.dart' as live;
 import 'package:zanupfmeeting/core/constants/meeting.dart';
+import 'package:zanupfmeeting/features/auth/controllers/user_controller.dart';
 import 'package:zanupfmeeting/features/meeting/controllers/live_meeting_controller.dart';
 
 class MeetingParticipant extends StatefulWidget {
@@ -13,6 +14,8 @@ class MeetingParticipant extends StatefulWidget {
 }
 
 class _MeetingParticipantState extends State<MeetingParticipant> {
+  final _userController = Get.find<UserController>();
+  final _liveMeetingController = Get.find<LiveMeetingController>();
   @override
   Widget build(BuildContext context) {
     return GetBuilder<LiveMeetingController>(
@@ -41,6 +44,10 @@ class _MeetingParticipantState extends State<MeetingParticipant> {
               trailing: [
                 IconButton(
                   onPressed: () {
+                    if (_liveMeetingController.meetingModel.value!.host !=
+                        _userController.user.value!.id) {
+                      return;
+                    }
                     Get.find<LiveMeetingController>().sendMeetingCommand(
                       userId: participant.identity,
                       command: MeetingConstants.CMD_MUTE,
@@ -57,6 +64,10 @@ class _MeetingParticipantState extends State<MeetingParticipant> {
                 IconButton(
                   onPressed: () => _remove(participant),
                   icon: Icon(Icons.close),
+                ).visibleIf(
+                  _userController.user.value!.id != participant.identity &&
+                      _liveMeetingController.meetingModel.value!.host ==
+                          _userController.user.value!.id,
                 ),
               ].row(mainAxisSize: MainAxisSize.min),
             );

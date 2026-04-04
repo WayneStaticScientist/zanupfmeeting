@@ -2,19 +2,26 @@ import 'dart:ui';
 import 'package:exui/exui.dart';
 import 'package:exui/material.dart';
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
 import 'package:livekit_client/livekit_client.dart';
 import 'package:livekit_client/livekit_client.dart' as live;
 import 'package:zanupfmeeting/core/constants/meeting.dart';
+import 'package:zanupfmeeting/core/extensions/bool_utils.dart';
+import 'package:zanupfmeeting/features/meeting/controllers/live_meeting_controller.dart';
 
 class VideoParticipant extends StatelessWidget {
   final live.Participant participant;
   final bool isHost;
+  final String? focusNode;
+  final bool hasFocus;
   final Function(String userId, String command) onCommand;
   const VideoParticipant({
     super.key,
     required this.participant,
     required this.isHost,
     required this.onCommand,
+    this.focusNode,
+    required this.hasFocus,
   });
 
   @override
@@ -84,10 +91,23 @@ class VideoParticipant extends StatelessWidget {
                     itemBuilder: (context) {
                       return [
                         PopupMenuItem(
-                          child: "SpotLight".text().textIconButton(
-                            onPressed: () {},
-                            icon: Icon(Icons.fullscreen),
-                          ),
+                          child: (hasFocus ? 'Remove SpotLight' : 'SpotLight')
+                              .text()
+                              .textIconButton(
+                                onPressed: () =>
+                                    Get.find<LiveMeetingController>()
+                                        .setSpotlight(
+                                          !hasFocus
+                                              ? participant.identity
+                                              : null,
+                                        ),
+                                icon: Icon(
+                                  hasFocus.lord(
+                                    Icons.fullscreen_exit,
+                                    Icons.fullscreen,
+                                  ),
+                                ),
+                              ),
                         ),
                         PopupMenuItem(
                           padding: EdgeInsets.symmetric(vertical: 0),

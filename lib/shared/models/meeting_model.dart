@@ -6,7 +6,8 @@ class MeetingModel {
   static const statuses = ["Active", "Waiting", "Ended", "Scheduled"];
   final bool public;
   final String host, roomName, meetingCode, status;
-  final String? duration, scheduleTime, focuseNode;
+  final String? duration, scheduleTime;
+  String? focuseNode;
   final List<Participant> participants;
   MeetingModel({
     required this.public,
@@ -37,4 +38,5 @@ class Participant {
   factory Participant.fromJson(Map<String, dynamic> json) =>
       _$ParticipantFromJson(json);
   Map<String, dynamic> toJson() => _$ParticipantToJson(this);
+  Map<String, Object> get schema => _$MeetingModelJsonSchema;
 }
