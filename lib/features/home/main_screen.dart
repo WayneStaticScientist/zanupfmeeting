@@ -3,6 +3,7 @@ import 'dart:ui';
 import 'package:exui/exui.dart';
 import 'package:get/get.dart';
 import 'package:flutter/material.dart';
+import 'package:pull_to_refresh/pull_to_refresh.dart';
 import 'package:zanupfmeeting/shared/widgets/avatar.dart';
 import 'package:zanupfmeeting/shared/widgets/blur_circle.dart';
 import 'package:zanupfmeeting/shared/widgets/meeting_widget.dart';
@@ -24,6 +25,7 @@ class ScreenDashboard extends StatefulWidget {
 
 class _ScreenDashboardState extends State<ScreenDashboard>
     with SingleTickerProviderStateMixin, MeetingLinkHandler {
+  final _refreshController = RefreshController();
   final _userController = Get.find<UserController>();
   final _meetingController = Get.find<MeetingController>();
   @override
@@ -32,6 +34,16 @@ class _ScreenDashboardState extends State<ScreenDashboard>
     WidgetsBinding.instance.addPostFrameCallback((e) {
       _meetingController.fetchMeetings();
     });
+  }
+
+  Future<void> onLoad({int page = 1}) async {
+    await _meetingController.fetchMeetings(page: page);
+    if (page == 1) {
+      _refreshController.refreshCompleted();
+      _refreshController.resetNoData();
+    } else {
+      _refreshController.loadComplete();
+    }
   }
 
   @override
@@ -65,121 +77,132 @@ class _ScreenDashboardState extends State<ScreenDashboard>
           ),
 
           SafeArea(
-            child: CustomScrollView(
-              physics: const BouncingScrollPhysics(),
-              slivers: [
-                // Top App Bar Section
-                SliverToBoxAdapter(
-                  child: Padding(
-                    padding: const EdgeInsets.all(24.0),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              "Welcome back,",
-                              style: textTheme.bodyLarge?.copyWith(
-                                color: colorScheme.onSurfaceVariant,
-                              ),
-                            ),
-                            Obx(
-                              () => Text(
-                                _userController.user.value!.firstName,
-                                style: textTheme.headlineSmall?.copyWith(
-                                  fontWeight: FontWeight.w900,
-                                  color: colorScheme.onSurface,
+            child: SmartRefresher(
+              onRefresh: () => onLoad(),
+              onLoading: () async {
+                if (_meetingController.lastPage.value <=
+                    _meetingController.meetingsPage.value) {
+                  return _refreshController.loadNoData();
+                }
+                await onLoad(page: _meetingController.meetingsPage.value + 1);
+              },
+              controller: _refreshController,
+              child: CustomScrollView(
+                physics: const BouncingScrollPhysics(),
+                slivers: [
+                  // Top App Bar Section
+                  SliverToBoxAdapter(
+                    child: Padding(
+                      padding: const EdgeInsets.all(24.0),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                "Welcome back,",
+                                style: textTheme.bodyLarge?.copyWith(
+                                  color: colorScheme.onSurfaceVariant,
                                 ),
                               ),
-                            ),
-                          ],
-                        ),
-                        Avatar(),
-                      ],
-                    ),
-                  ),
-                ),
-
-                // Action Grid
-                SliverToBoxAdapter(
-                  child: Padding(
-                    padding: const EdgeInsets.only(
-                      left: 24.0,
-                      right: 24.0,
-                      bottom: 24,
-                    ),
-                    child: Row(
-                      children: [
-                        _buildQuickAction(
-                          context,
-                          icon: Icons.add_rounded,
-                          label: "New",
-                          color: colorScheme.primary,
-                          onTap: () => _showCreateMeetingModal(context),
-                        ),
-                        const SizedBox(width: 16),
-                        _buildQuickAction(
-                          context,
-                          icon: Icons.videocam_rounded,
-                          label: "Join",
-                          color: colorScheme.secondary,
-                          onTap: () => _showJoinMeetingModal(context),
-                        ),
-                        const SizedBox(width: 16),
-                        _buildQuickAction(
-                          context,
-                          icon: Icons.calendar_today_rounded,
-                          label: "Schedule",
-                          color: Colors.orange,
-                          onTap: () => _showScheduleModal(context),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-
-                // Upcoming Section Header
-                SliverToBoxAdapter(
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 24.0),
-                    child: Text(
-                      "Meetings",
-                      style: textTheme.titleLarge?.copyWith(
-                        fontWeight: FontWeight.bold,
+                              Obx(
+                                () => Text(
+                                  _userController.user.value!.firstName,
+                                  style: textTheme.headlineSmall?.copyWith(
+                                    fontWeight: FontWeight.w900,
+                                    color: colorScheme.onSurface,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                          Avatar(),
+                        ],
                       ),
                     ),
                   ),
-                ),
 
-                // List of Meetings
-                Obx(() {
-                  if (_meetingController.isLoading.value) {
-                    return SliverFillRemaining(
-                      child: CircularProgressIndicator().center(),
-                    );
-                  }
-                  if (_meetingController.error.value.isNotEmpty) {
-                    return SliverFillRemaining(
-                      child: _meetingController.error.value.text().center(),
-                    );
-                  }
-                  if (_meetingController.meetings.isEmpty) {
-                    return SliverFillRemaining(
-                      child: Text("No meetings found").center(),
-                    );
-                  }
-                  return SliverPadding(
-                    padding: const EdgeInsets.all(24),
-                    sliver: SliverList(
-                      delegate: SliverChildBuilderDelegate((context, index) {
-                        final meeting = _meetingController.meetings[index];
-                        return MeetingWidget(meeting: meeting);
-                      }, childCount: _meetingController.meetings.length),
+                  // Action Grid
+                  SliverToBoxAdapter(
+                    child: Padding(
+                      padding: const EdgeInsets.only(
+                        left: 24.0,
+                        right: 24.0,
+                        bottom: 24,
+                      ),
+                      child: Row(
+                        children: [
+                          _buildQuickAction(
+                            context,
+                            icon: Icons.add_rounded,
+                            label: "New",
+                            color: colorScheme.primary,
+                            onTap: () => _showCreateMeetingModal(context),
+                          ),
+                          const SizedBox(width: 16),
+                          _buildQuickAction(
+                            context,
+                            icon: Icons.videocam_rounded,
+                            label: "Join",
+                            color: colorScheme.secondary,
+                            onTap: () => _showJoinMeetingModal(context),
+                          ),
+                          const SizedBox(width: 16),
+                          _buildQuickAction(
+                            context,
+                            icon: Icons.calendar_today_rounded,
+                            label: "Schedule",
+                            color: Colors.orange,
+                            onTap: () => _showScheduleModal(context),
+                          ),
+                        ],
+                      ),
                     ),
-                  );
-                }),
-              ],
+                  ),
+
+                  // Upcoming Section Header
+                  SliverToBoxAdapter(
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 24.0),
+                      child: Text(
+                        "Meetings",
+                        style: textTheme.titleLarge?.copyWith(
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  ),
+
+                  // List of Meetings
+                  Obx(() {
+                    if (_meetingController.isLoading.value) {
+                      return SliverFillRemaining(
+                        child: CircularProgressIndicator().center(),
+                      );
+                    }
+                    if (_meetingController.error.value.isNotEmpty) {
+                      return SliverFillRemaining(
+                        child: _meetingController.error.value.text().center(),
+                      );
+                    }
+                    if (_meetingController.meetings.isEmpty) {
+                      return SliverFillRemaining(
+                        child: Text("No meetings found").center(),
+                      );
+                    }
+                    return SliverPadding(
+                      padding: const EdgeInsets.all(24),
+                      sliver: SliverList(
+                        delegate: SliverChildBuilderDelegate((context, index) {
+                          final meeting = _meetingController.meetings[index];
+                          return MeetingWidget(meeting: meeting);
+                        }, childCount: _meetingController.meetings.length),
+                      ),
+                    );
+                  }),
+                ],
+              ),
             ),
           ),
         ],

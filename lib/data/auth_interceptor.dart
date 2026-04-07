@@ -31,7 +31,6 @@ class AuthenticationInterceptor extends Interceptor {
               TokenModel.fromStorage().accessTokenHeader;
           err.requestOptions.headers["device"] = await getDeviceId();
           final retryResponse = await dio.fetch(err.requestOptions);
-
           return handler.resolve(retryResponse);
         }
       } on DioException catch (e) {

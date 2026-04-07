@@ -4,6 +4,7 @@ import 'package:exui/exui.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/material.dart';
 import 'package:share_plus/share_plus.dart';
+import 'package:wakelock_plus/wakelock_plus.dart';
 import 'package:livekit_client/livekit_client.dart' as live;
 import 'package:zanupfmeeting/shared/meeting/side_panel.dart';
 import 'package:zanupfmeeting/core/extensions/bool_utils.dart';
@@ -31,12 +32,14 @@ class _ScreenConferenceRoomState extends State<ScreenConferenceRoom> {
   @override
   void initState() {
     super.initState();
+    WakelockPlus.enable();
     _liveMeetingController.initMeeting(widget.meetingModel);
   }
 
   @override
   void dispose() {
     _liveMeetingController.closeMeeting();
+    WakelockPlus.disable();
     super.dispose();
   }
 
@@ -469,6 +472,7 @@ class _ScreenConferenceRoomState extends State<ScreenConferenceRoom> {
   void _shareMeeting() {
     Get.defaultDialog(
       title: "Share?",
+      content: "Select option to share this meeting".text(),
       textCancel: "Share Code",
       textConfirm: "Share Link",
       onCancel: () {

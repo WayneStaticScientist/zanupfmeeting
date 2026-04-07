@@ -1,3 +1,5 @@
+import 'dart:developer';
+
 import 'package:get/get.dart';
 import 'package:zanupfmeeting/data/net_connection.dart';
 import 'package:zanupfmeeting/data/auth_interceptor.dart';
@@ -66,6 +68,7 @@ class AuthController extends GetxController {
   void authorizeUser() async {
     if (UserModel.fromStorage() == null) return;
     final response = await AuthenticationInterceptor.requestToken();
+    log(response.response);
     if (response.hasError && response.statusCode == 401) {
       UserModel.clearStorage();
       Get.offAll(() => LoginScreen());

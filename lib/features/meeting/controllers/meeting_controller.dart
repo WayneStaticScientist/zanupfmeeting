@@ -9,6 +9,7 @@ class MeetingController extends GetxController {
   RxInt lastPage = 2.obs;
   RxBool isLoading = false.obs;
   RxList<MeetingModel> meetings = <MeetingModel>[].obs;
+  RxInt meetingsPage = RxInt(1);
   Future<void> fetchMeetings({int page = 1, int limit = 10}) async {
     isLoading.value = true;
     error.value = "";
@@ -25,6 +26,7 @@ class MeetingController extends GetxController {
               .toList() ??
           [],
     );
+    meetingsPage.value = response.body['meta']['page'] as int;
     lastPage.value = response.body['meta']['lastPage'] as int;
   }
 

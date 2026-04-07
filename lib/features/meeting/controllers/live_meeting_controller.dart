@@ -36,6 +36,11 @@ class LiveMeetingController extends GetxController {
     if (meetingError.isNotEmpty) {
       return;
     }
+    waitingList.addAll(
+      meetingModel.value!.participants.where((e) {
+        return e.status == 'pending';
+      }).toList(),
+    );
 
     socket = IO.io(
       Net.socketUrl,
@@ -56,6 +61,13 @@ class LiveMeetingController extends GetxController {
     });
 
     socket!.on("join-meeting", (_) {
+      if (room.value != null) {
+        final state = room.value!.connectionState;
+        if (state == ConnectionState.connected ||
+            state == ConnectionState.reconnecting) {
+          return;
+        }
+      }
       fetchMeetingToken(user, model);
     });
 
@@ -113,6 +125,7 @@ class LiveMeetingController extends GetxController {
       meetingModel.value?.focuseNode = e['focusNode'];
       update();
     });
+    socket!.onDisconnect((_) {});
     socket!.connect();
   }
 
