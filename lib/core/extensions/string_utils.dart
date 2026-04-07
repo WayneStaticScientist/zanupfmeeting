@@ -20,6 +20,6 @@ extension StringOptionalUtils on String? {
     if (firstString == null || secondString == null) {
       return this!;
     }
-    return '${firstString} ${secondString}';
+    return '$firstString $secondString';
   }
 }

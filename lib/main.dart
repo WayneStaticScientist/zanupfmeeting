@@ -4,6 +4,7 @@ import 'package:isar_plus/isar_plus.dart';
 import 'package:get_storage/get_storage.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'package:zanupfmeeting/features/meeting/controllers/document_controllers.dart';
 import 'package:zanupfmeeting/shared/models/user_model.dart';
 import 'package:zanupfmeeting/features/home/main_screen.dart';
 import 'package:zanupfmeeting/features/auth/screens/screen_login.dart';
@@ -54,6 +55,7 @@ class MyApp extends StatelessWidget {
         Get.put(AuthController());
         Get.put(MeetingController());
         Get.put(LiveMeetingController());
+        Get.put(DocumentControllers());
       }),
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.green),

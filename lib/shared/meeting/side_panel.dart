@@ -1,11 +1,13 @@
 import 'dart:ui';
+import 'package:exui/exui.dart';
 import 'package:get/get.dart';
 import 'package:flutter/material.dart';
+import 'package:zanupfmeeting/shared/meeting/documents_list.dart';
+import 'package:zanupfmeeting/shared/widgets/chat_input.dart';
 import 'package:zanupfmeeting/core/extensions/bool_utils.dart';
 import 'package:zanupfmeeting/shared/meeting/meeting_participant.dart';
 import 'package:zanupfmeeting/features/auth/controllers/user_controller.dart';
 import 'package:zanupfmeeting/features/meeting/controllers/live_meeting_controller.dart';
-import 'package:zanupfmeeting/shared/widgets/chat_input.dart';
 
 class MeetingSidePanel extends StatefulWidget {
   final int activeTab;
@@ -42,31 +44,45 @@ class _MeetingSidePanelState extends State<MeetingSidePanel> {
               // Tabs
               Padding(
                 padding: const EdgeInsets.all(16),
-                child: Row(
-                  children: [
-                    _tabItem("Chat", _activeTab == 0, () {
-                      _liveMeetingController.messagesSize.value = 0;
-                      setState(() => _activeTab = 0);
-                    }),
-                    const SizedBox(width: 12),
-                    _tabItem(
-                      "People",
-                      _activeTab == 1,
-                      () => setState(() => _activeTab = 1),
-                    ),
-                    const SizedBox(width: 12),
-                    _tabItem(
-                      "Documents",
-                      _activeTab == 1,
-                      () => setState(() => _activeTab = 1),
-                    ),
-                  ],
-                ),
+                child:
+                    Row(
+                          children: [
+                            _tabItem("Chat", _activeTab == 0, () {
+                              _liveMeetingController.messagesSize.value = 0;
+                              setState(() => _activeTab = 0);
+                            }),
+                            const SizedBox(width: 12),
+                            _tabItem(
+                              "People",
+                              _activeTab == 1,
+                              () => setState(() => _activeTab = 1),
+                            ),
+                            const SizedBox(width: 12),
+                            _tabItem(
+                              "Documents",
+                              _activeTab == 2,
+                              () => setState(() => _activeTab = 2),
+                            ),
+                          ],
+                        )
+                        .padding(EdgeInsets.only(bottom: 12))
+                        .decoratedBox(
+                          decoration: BoxDecoration(
+                            border: Border(
+                              bottom: BorderSide(
+                                color: Colors.grey.withAlpha(50),
+                                width: 2,
+                              ),
+                            ),
+                          ),
+                        ),
               ),
               Expanded(
-                child: _activeTab == 0
+                child: (_activeTab == 0)
                     ? _buildChatList()
-                    : _buildParticipantList(),
+                    : (_activeTab == 1
+                          ? _buildParticipantList()
+                          : DocumentsList()),
               ),
               if (_activeTab == 0) ChatInput(),
             ],
@@ -82,9 +98,7 @@ class _MeetingSidePanelState extends State<MeetingSidePanel> {
       child: Text(
         title,
         style: TextStyle(
-          color: active
-              ? Theme.of(context).colorScheme.primary
-              : Colors.white38,
+          color: active ? Theme.of(context).colorScheme.primary : Colors.white,
           fontWeight: FontWeight.bold,
           fontSize: 16,
         ),
