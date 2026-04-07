@@ -5,7 +5,7 @@ part 'message_model.g.dart';
 @JsonSerializable()
 class MessageModel {
   final String userId, meetingCode, message, displayName;
-
+  String? fileType;
   MessageModel({
     required this.userId,
     required this.meetingCode,

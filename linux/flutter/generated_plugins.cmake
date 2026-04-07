@@ -3,8 +3,10 @@
 #
 
 list(APPEND FLUTTER_PLUGIN_LIST
+  file_selector_linux
   flutter_webrtc
   gtk
+  isar_plus_flutter_libs
   livekit_client
   rive_common
   url_launcher_linux

@@ -11,7 +11,7 @@ MessageModel _$MessageModelFromJson(Map<String, dynamic> json) => MessageModel(
   meetingCode: json['meetingCode'] as String,
   message: json['message'] as String,
   displayName: json['displayName'] as String,
-);
+)..fileType = json['fileType'] as String?;
 
 Map<String, dynamic> _$MessageModelToJson(MessageModel instance) =>
     <String, dynamic>{
@@ -19,4 +19,5 @@ Map<String, dynamic> _$MessageModelToJson(MessageModel instance) =>
       'meetingCode': instance.meetingCode,
       'message': instance.message,
       'displayName': instance.displayName,
+      'fileType': instance.fileType,
     };

@@ -17,8 +17,9 @@ import 'package:zanupfmeeting/shared/models/meeting_model.dart' as mt;
 
 class LiveMeetingController extends GetxController {
   RxString token = RxString('');
-  RxBool audioEnabled = true.obs;
-  RxBool cameraEnabled = true.obs;
+  RxBool audioEnabled = false.obs;
+  RxBool cameraEnabled = false.obs;
+  RxInt documentMessagesSize = 0.obs;
   RxBool screenShareEnabled = false.obs;
   RxString meetingError = RxString("");
   EventsListener<RoomEvent>? _roomListener;
@@ -120,7 +121,16 @@ class LiveMeetingController extends GetxController {
       if (SettingsModel.fromStorage().disableMessageNotifications) return;
       Toaster.info("New message from ${messageModel.message}");
     });
-
+    socket!.on("file-uploaad", (e) {
+      final user = UserModel.fromStorage();
+      messagesSize.value += 1;
+      documentMessagesSize.value += 1;
+      final messageModel = MessageModel.fromJson(e);
+      messages.add(messageModel);
+      if (user!.id == messageModel.userId) return;
+      if (SettingsModel.fromStorage().disableMessageNotifications) return;
+      Toaster.info("${messageModel.message} Sent Attachment");
+    });
     socket!.on("highlight-node", (e) {
       meetingModel.value?.focuseNode = e['focusNode'];
       update();
@@ -180,10 +190,9 @@ class LiveMeetingController extends GetxController {
     try {
       await room.value!.prepareConnection(Net.liveUrl, token.value);
       await room.value!.connect(Net.liveUrl, token.value);
-      await room.value!.localParticipant?.setCameraEnabled(cameraEnabled.value);
-      await room.value!.localParticipant?.setMicrophoneEnabled(
-        audioEnabled.value,
-      );
+
+      switchVid(true);
+      switchMic(true);
       update();
     } catch (e) {
       log("There was error $e");
@@ -213,7 +222,10 @@ class LiveMeetingController extends GetxController {
   }
 
   void switchMic(bool state) async {
-    if (room.value == null) return;
+    if (room.value == null ||
+        room.value!.connectionState != ConnectionState.connected) {
+      return;
+    }
     try {
       await room.value!.localParticipant?.setMicrophoneEnabled(state);
       audioEnabled.value = state;
@@ -224,7 +236,10 @@ class LiveMeetingController extends GetxController {
   }
 
   void switchVid(bool state) async {
-    if (room.value == null) return;
+    if (room.value == null ||
+        room.value!.connectionState != ConnectionState.connected) {
+      return;
+    }
     try {
       await room.value!.localParticipant?.setCameraEnabled(state);
       cameraEnabled.value = state;
@@ -365,5 +380,28 @@ class LiveMeetingController extends GetxController {
     }
     Get.offAll(() => ScreenDashboard());
     Toaster.success("Meeting ended");
+  }
+
+  RxBool sendingDocuments = false.obs;
+  RxDouble sendingProgress = 0.0.obs;
+  Future<void> uploadFile(String filePath, String type) async {
+    FormData formData = FormData({
+      "type": type,
+      "meetingCode": meetingModel.value!.meetingCode,
+      "file": MultipartFile(filePath, filename: filePath.split('/').last),
+    });
+    sendingDocuments.value = true;
+    sendingProgress.value = 0;
+    final response = await Net.post(
+      "/meetings/room/upload-document",
+      data: formData,
+      onSendProgress: (sent, total) {
+        sendingProgress.value = (sent / total * 100);
+      },
+    );
+    sendingDocuments.value = false;
+    if (response.hasError) {
+      return Toaster.error(response.response);
+    }
   }
 }

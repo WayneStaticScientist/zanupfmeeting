@@ -5,10 +5,12 @@ import 'package:zanupfmeeting/shared/models/response_model.dart';
 
 class Net {
   static Dio? _dio;
-  static const String domain = 'zanumeetapi.comradeconnect.co.zw';
-  static const String baseUrl = "https://$domain/v1";
-  static const String socketUrl = "https://$domain";
-  static const String liveUrl = "wss://live.comradeconnect.co.zw";
+  // static const String domain = 'zanumeetapi.comradeconnect.co.zw';
+  static const String domain = '192.168.1.199:5119';
+  static const String baseUrl = "http://$domain/v1";
+  static const String socketUrl = "http://$domain";
+  // static const String liveUrl = "wss://live.comradeconnect.co.zw";
+  static const String liveUrl = "ws://192.168.1.199:7880";
   static Future<ResponseModel> get(String url) async {
     if (Net._dio == null) {
       await initDio();
@@ -25,12 +27,18 @@ class Net {
     String url, {
     dynamic data,
     Options? options,
+    Function(int, int)? onSendProgress,
   }) async {
     if (Net._dio == null) {
       await initDio();
     }
     try {
-      final response = await _dio!.post(url, data: data, options: options);
+      final response = await _dio!.post(
+        url,
+        data: data,
+        options: options,
+        onSendProgress: onSendProgress,
+      );
       return ResponseModel(hasError: false, response: "", body: response.data);
     } on DioException catch (e) {
       return getError(e);

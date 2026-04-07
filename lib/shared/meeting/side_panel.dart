@@ -1,11 +1,11 @@
 import 'dart:ui';
 import 'package:get/get.dart';
 import 'package:flutter/material.dart';
-import 'package:zanupfmeeting/core/utils/toaster_util.dart';
 import 'package:zanupfmeeting/core/extensions/bool_utils.dart';
 import 'package:zanupfmeeting/shared/meeting/meeting_participant.dart';
 import 'package:zanupfmeeting/features/auth/controllers/user_controller.dart';
 import 'package:zanupfmeeting/features/meeting/controllers/live_meeting_controller.dart';
+import 'package:zanupfmeeting/shared/widgets/chat_input.dart';
 
 class MeetingSidePanel extends StatefulWidget {
   final int activeTab;
@@ -17,19 +17,12 @@ class MeetingSidePanel extends StatefulWidget {
 
 class _MeetingSidePanelState extends State<MeetingSidePanel> {
   int _activeTab = 0;
-  final _messageText = TextEditingController();
   final _userController = Get.find<UserController>();
   final _liveMeetingController = Get.find<LiveMeetingController>();
   @override
   void initState() {
     _activeTab = widget.activeTab;
     super.initState();
-  }
-
-  @override
-  void dispose() {
-    _messageText.dispose();
-    super.dispose();
   }
 
   @override
@@ -61,6 +54,12 @@ class _MeetingSidePanelState extends State<MeetingSidePanel> {
                       _activeTab == 1,
                       () => setState(() => _activeTab = 1),
                     ),
+                    const SizedBox(width: 12),
+                    _tabItem(
+                      "Documents",
+                      _activeTab == 1,
+                      () => setState(() => _activeTab = 1),
+                    ),
                   ],
                 ),
               ),
@@ -69,7 +68,7 @@ class _MeetingSidePanelState extends State<MeetingSidePanel> {
                     ? _buildChatList()
                     : _buildParticipantList(),
               ),
-              if (_activeTab == 0) _buildChatInput(),
+              if (_activeTab == 0) ChatInput(),
             ],
           ),
         ),
@@ -148,41 +147,5 @@ class _MeetingSidePanelState extends State<MeetingSidePanel> {
     return MeetingParticipant();
   }
 
-  Widget _buildChatInput() {
-    return Padding(
-      padding: const EdgeInsets.all(16),
-      child: TextField(
-        controller: _messageText,
-        style: const TextStyle(color: Colors.white),
-        decoration: InputDecoration(
-          hintText: "Send message...",
-          hintStyle: const TextStyle(color: Colors.white24),
-          filled: true,
-          fillColor: Colors.white.withAlpha(50),
-          suffixIcon: IconButton(
-            onPressed: () {
-              if (_messageText.text.trim().isEmpty) {
-                return Toaster.error(
-                  "Cant send empty message",
-                  title: "Input Error",
-                );
-              }
-              _liveMeetingController.sendMessage(_messageText.text.trim());
-              setState(() {
-                _messageText.text = "";
-              });
-            },
-            icon: Icon(
-              Icons.send_rounded,
-              color: Theme.of(context).colorScheme.primary,
-            ),
-          ),
-          border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(16),
-            borderSide: BorderSide.none,
-          ),
-        ),
-      ),
-    );
-  }
+  // Helper method to show the attachment selection menu
 }
