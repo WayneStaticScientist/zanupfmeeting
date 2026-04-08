@@ -15,6 +15,7 @@ import 'package:zanupfmeeting/features/home/main_screen.dart';
 import 'package:zanupfmeeting/shared/models/meeting_model.dart';
 import 'package:zanupfmeeting/shared/models/message_model.dart';
 import 'package:zanupfmeeting/shared/models/meeting_model.dart' as mt;
+import 'package:zanupfmeeting/features/meeting/controllers/document_controllers.dart';
 
 class LiveMeetingController extends GetxController {
   RxString token = RxString('');
@@ -128,6 +129,10 @@ class LiveMeetingController extends GetxController {
       documentMessagesSize.value += 1;
       final messageModel = MessageModel.fromJson(e);
       messages.add(messageModel);
+      final documentsController = Get.find<DocumentControllers>();
+      documentsController.fetctDocumentsOverNetwork(
+        meetingCode: messageModel.meetingCode,
+      );
       if (user!.id == messageModel.userId) return;
       if (SettingsModel.fromStorage().disableMessageNotifications) return;
       Toaster.info("${messageModel.message} Sent Attachment");

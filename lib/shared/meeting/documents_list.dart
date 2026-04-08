@@ -1,9 +1,11 @@
+import 'package:exui/exui.dart';
 import 'package:get/get.dart';
 import 'package:flutter/material.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:pull_to_refresh/pull_to_refresh.dart';
 import 'package:zanupfmeeting/features/meeting/controllers/document_controllers.dart';
 import 'package:zanupfmeeting/features/meeting/controllers/live_meeting_controller.dart';
+import 'package:zanupfmeeting/shared/models/upload_document_model.dart';
 
 class DocumentsList extends StatefulWidget {
   const DocumentsList({super.key});
@@ -18,6 +20,13 @@ class _DocumentsListState extends State<DocumentsList> {
     initialRefresh: false,
   );
   final TextEditingController _searchController = TextEditingController();
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((e) {
+      _onLoading();
+    });
+  }
 
   @override
   void dispose() {
@@ -55,9 +64,7 @@ class _DocumentsListState extends State<DocumentsList> {
                   child: CircularProgressIndicator(color: Colors.redAccent),
                 );
               }
-
               final docs = _documentController.documents;
-
               return SmartRefresher(
                 controller: _refreshController,
                 enablePullDown: true,
@@ -76,7 +83,15 @@ class _DocumentsListState extends State<DocumentsList> {
                         separatorBuilder: (_, __) => const SizedBox(height: 12),
                         itemBuilder: (context, index) {
                           final doc = docs[index];
-                          return _DocumentCard(doc: doc);
+                          return Obx(
+                            () => _DocumentCard(
+                              doc: doc,
+                              progress:
+                                  _documentController.downloadProgress.value,
+                              fileInDowload:
+                                  _documentController.downloadId.value,
+                            ),
+                          );
                         },
                       ),
               );
@@ -134,9 +149,15 @@ class _DocumentsListState extends State<DocumentsList> {
 }
 
 class _DocumentCard extends StatelessWidget {
-  final dynamic doc; // UploadDocumentModel
+  final double progress;
+  final String fileInDowload;
+  final UploadDocumentModel doc; // UploadDocumentModel
 
-  const _DocumentCard({required this.doc});
+  const _DocumentCard({
+    required this.doc,
+    required this.progress,
+    required this.fileInDowload,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -150,7 +171,7 @@ class _DocumentCard extends StatelessWidget {
         child: InkWell(
           borderRadius: BorderRadius.circular(16),
           onTap: () {
-            // Handle document preview
+            Get.find<DocumentControllers>().openDocument(doc);
           },
           child: Padding(
             padding: const EdgeInsets.all(16.0),
@@ -197,11 +218,16 @@ class _DocumentCard extends StatelessWidget {
                     ],
                   ),
                 ),
-                Icon(
-                  LucideIcons.chevronRight,
-                  color: Colors.grey[400],
-                  size: 20,
-                ),
+                if (fileInDowload == doc.id) ...[
+                  "downloading $progress%".text(
+                    style: TextStyle(color: Colors.white),
+                  ),
+                ] else
+                  Icon(
+                    LucideIcons.chevronRight,
+                    color: Colors.grey[400],
+                    size: 20,
+                  ),
               ],
             ),
           ),

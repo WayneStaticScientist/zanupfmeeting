@@ -61,6 +61,22 @@ class Net {
     }
   }
 
+  static Future<ResponseModel> download(
+    String s,
+    String savePath, {
+    required Null Function(dynamic received, dynamic total) onReceiveProgress,
+  }) async {
+    try {
+      if (Net._dio == null) {
+        await initDio();
+      }
+      await _dio!.download(s, savePath, onReceiveProgress: onReceiveProgress);
+      return ResponseModel(hasError: false, response: "", body: []);
+    } on DioException catch (e) {
+      return getError(e);
+    }
+  }
+
   static Future<ResponseModel> delete(
     String url, {
     dynamic data,

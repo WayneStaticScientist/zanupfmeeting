@@ -58,11 +58,34 @@ class _MeetingSidePanelState extends State<MeetingSidePanel> {
                               () => setState(() => _activeTab = 1),
                             ),
                             const SizedBox(width: 12),
-                            _tabItem(
-                              "Documents",
-                              _activeTab == 2,
-                              () => setState(() => _activeTab = 2),
-                            ),
+                            Obx(() {
+                              if (_liveMeetingController
+                                      .documentMessagesSize
+                                      .value >
+                                  0) {
+                                return Badge.count(
+                                  count: _liveMeetingController
+                                      .documentMessagesSize
+                                      .value,
+                                  child: _tabItem(
+                                    "Documents",
+                                    _activeTab == 2,
+                                    () => setState(() => _activeTab = 2),
+                                  ),
+                                );
+                              }
+                              return _tabItem(
+                                "Documents",
+                                _activeTab == 2,
+                                () => setState(() {
+                                  _activeTab = 2;
+                                  _liveMeetingController
+                                          .documentMessagesSize
+                                          .value =
+                                      0;
+                                }),
+                              );
+                            }),
                           ],
                         )
                         .padding(EdgeInsets.only(bottom: 12))
