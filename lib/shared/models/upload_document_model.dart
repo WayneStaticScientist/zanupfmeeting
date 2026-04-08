@@ -20,7 +20,7 @@ class UploadDocumentModel {
       id: data['_id'],
       fileType: data['fileType'] ?? '',
       fileName: data['fileName'] ?? '',
-      meetingCode: data['meetingCode'] ?? '',
+      meetingCode: data['meetingCode'],
     );
   }
 }

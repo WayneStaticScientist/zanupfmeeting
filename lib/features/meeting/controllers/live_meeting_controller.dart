@@ -1,5 +1,6 @@
 import 'dart:developer';
 import 'package:get/get.dart';
+import 'package:dio/dio.dart' as dio;
 import 'package:flutter_webrtc/flutter_webrtc.dart';
 import 'package:livekit_client/livekit_client.dart';
 import 'package:zanupfmeeting/data/net_connection.dart';
@@ -385,10 +386,13 @@ class LiveMeetingController extends GetxController {
   RxBool sendingDocuments = false.obs;
   RxDouble sendingProgress = 0.0.obs;
   Future<void> uploadFile(String filePath, String type) async {
-    FormData formData = FormData({
+    final formData = dio.FormData.fromMap({
       "type": type,
       "meetingCode": meetingModel.value!.meetingCode,
-      "file": MultipartFile(filePath, filename: filePath.split('/').last),
+      "file": await dio.MultipartFile.fromFile(
+        filePath,
+        filename: filePath.split('/').last,
+      ),
     });
     sendingDocuments.value = true;
     sendingProgress.value = 0;
